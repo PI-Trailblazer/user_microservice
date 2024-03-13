@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "app"
+version = "0.1.0"
+description = "Microservice for User related operations to be included in the TrailBlazer project."
+authors = ["LeikRad <48689668+LeikRad@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.110.0"
+
+
+[tool.poetry.group.dev.dependencies]
+uvicorn = "^0.28.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
