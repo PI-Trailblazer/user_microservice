@@ -14,8 +14,8 @@ class User(BaseModel):
     tags: List[str]
 
 
-class UserCreate(User): ...
-
+class UserCreate(User):
+    uid: str
 
 class UserUpdate(User):
     name: Optional[str]

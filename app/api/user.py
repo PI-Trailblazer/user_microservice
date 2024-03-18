@@ -50,5 +50,6 @@ async def register_endpoint(
         name="",
         verified=False if "PROVIDER" in user_in.roles else True,
     )
+    print(userin)
     # Create the user in the database
     return crud.user.create(db, obj_in=userin)
