@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     POSTGRES_URI: str = ""
     TEST_POSTGRES_URI: str = ""
 
+    SCHEMA_NAME: str = "usr_microservice"
+
     @model_validator(mode="after")
     def populate_database_uris(self) -> "Settings":
         if self.POSTGRES_URI == "":

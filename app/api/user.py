@@ -4,20 +4,22 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import jwt
+from app import crud
+from app.schemas import UserCreate
 
 router = APIRouter()
 
 
 class RegisterData(BaseModel):
     roles: List[str]
-    phone_number: Optional[str] = None
+    phone_number: Optional[int] = None
 
 
 class AuthHeader(BaseModel):
     Authorization: str
 
 
-@router.post("/api/register")
+@router.post("/register")
 async def register_endpoint(
     *,
     db: Session = Depends(deps.get_db),
@@ -38,8 +40,15 @@ async def register_endpoint(
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
     email = decoded_token["email"]
-    print(uid)
-    print(email)
-    print(user_in.roles)
-    print(user_in.phone_number)
-    pass
+
+    userin = UserCreate(
+        uid=uid,
+        email=email,
+        roles=user_in.roles,
+        phone_number=user_in.phone_number,
+        tags=[],
+        name="",
+        verified=False if "PROVIDER" in user_in.roles else True,
+    )
+    # Create the user in the database
+    return crud.user.create(db, obj_in=userin)

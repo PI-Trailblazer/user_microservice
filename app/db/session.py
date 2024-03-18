@@ -5,4 +5,6 @@ from app.core.config import settings
 
 
 engine = create_engine(settings.POSTGRES_URI)
+print(settings.POSTGRES_URI)
+print(settings.PRODUCTION)
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
