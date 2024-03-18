@@ -6,7 +6,7 @@ from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional, Union
 
-    
+
 # Project Directories
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -21,15 +21,11 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api"
     STATIC_STR: str = "/static"
 
-    HOST: str = "https://nei.web.ua.pt" if PRODUCTION else "http://localhost"
+    HOST: str = "www.google.pt" if PRODUCTION else "http://localhost"
     STATIC_URL: str = HOST + STATIC_STR
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     BACKEND_CORS_ORIGINS: List[str] = [HOST] + (
-        []
-        if PRODUCTION
-        else [
-            "http://localhost:3000"
-        ]
+        [] if PRODUCTION else ["http://localhost:3000"]
     )
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

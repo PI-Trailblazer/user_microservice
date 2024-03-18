@@ -24,11 +24,6 @@ async def register_endpoint(
     user_in: RegisterData,
     headers: AuthHeader = Depends()
 ):
-    # Now you can access the data sent by the `register` function
-    # data.roles, data.phone_number, headers.Authorization
-    # Write your logic here
-    print(user_in)
-
     # Remove 'Bearer ' from the Authorization header
     id_token = headers.Authorization[7:]
 
@@ -43,5 +38,8 @@ async def register_endpoint(
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
     email = decoded_token["email"]
-    print(uid, email)
+    print(uid)
+    print(email)
+    print(user_in.roles)
+    print(user_in.phone_number)
     pass
