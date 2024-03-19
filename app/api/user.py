@@ -55,7 +55,7 @@ async def register_endpoint(
     return crud.user.create(db, obj_in=userin)
 
 
-@router.get("/get_user_by_token")
+@router.post("/login")
 async def get_user_by_token(
     db: Session = Depends(deps.get_db), headers: AuthHeader = Depends()
 ):
@@ -74,7 +74,7 @@ async def get_user_by_token(
     uid = decoded_token["user_id"]
 
     # Get the user from the database
-    user = crud.user.get_by_uid(db, uid=uid)
+    user = crud.user.get(db, id=uid)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user

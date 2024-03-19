@@ -4,9 +4,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
 
-class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
-    def get_by_uid(self, db: Session, uid: str = None):
-        return db.query(User).filter(User.uid == uid).first()
+class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]): ...
 
 
 user = CRUDUser(User)
