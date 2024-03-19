@@ -53,3 +53,28 @@ async def register_endpoint(
     print(userin)
     # Create the user in the database
     return crud.user.create(db, obj_in=userin)
+
+
+@router.get("/get_user_by_token")
+async def get_user_by_token(
+    db: Session = Depends(deps.get_db), headers: AuthHeader = Depends()
+):
+    # Remove 'Bearer ' from the Authorization header
+    id_token = headers.Authorization[7:]
+
+    # Decode the JWT token
+    try:
+        decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Signature has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Token is valid; now you can use the decoded_token
+    uid = decoded_token["user_id"]
+
+    # Get the user from the database
+    user = crud.user.get_by_uid(db, uid=uid)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
