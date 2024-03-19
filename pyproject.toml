@@ -8,6 +8,12 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 fastapi = "^0.110.0"
+pydantic = "^2.6.4"
+firebase-admin = "^6.5.0"
+sqlalchemy = "^2.0.28"
+pydantic-settings = "^2.2.1"
+psycopg2-binary = "^2.9.9"
+loguru = "^0.7.2"
 
 
 [tool.poetry.group.dev.dependencies]
