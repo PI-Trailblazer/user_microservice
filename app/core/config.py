@@ -38,9 +38,9 @@ class Settings(BaseSettings):
 
     # PostgreSQL DB
     POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "users"
+    POSTGRES_USER: str = "user_db_user"
+    POSTGRES_PASSWORD: str = "user_db_password"
+    POSTGRES_DB: str = "user_db"
     POSTGRES_URI: str = ""
     TEST_POSTGRES_URI: str = ""
 
