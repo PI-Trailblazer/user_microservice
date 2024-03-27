@@ -9,7 +9,7 @@ from app.core.config import settings
 class User(BaseModel):
     email: str
     f_name: str
-    L_name: str
+    l_name: str
     phone_number: Optional[int]
     roles: List[str]
     verified: bool
