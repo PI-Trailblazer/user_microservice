@@ -12,6 +12,8 @@ router = APIRouter()
 
 class RegisterData(BaseModel):
     roles: List[str]
+    f_name: str
+    l_name: str
     phone_number: Optional[int] = None
 
 
@@ -44,10 +46,12 @@ async def register_endpoint(
     userin = UserCreate(
         uid=uid,
         email=email,
+        f_name=user_in.f_name,
+        L_name=user_in.l_name,
         roles=user_in.roles,
         phone_number=user_in.phone_number,
         tags=[],
-        name="",
+        image="",
         verified=False if "PROVIDER" in user_in.roles else True,
     )
 
