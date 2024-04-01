@@ -11,12 +11,14 @@ router = APIRouter()
 
 
 class RegisterData(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
     roles: List[str]
-    phone_number: Optional[int] = None
+    phone: Optional[str] = None
+    tags: List[str]
 
 
-class AuthHeader(BaseModel):
-    Authorization: str
 
 
 @router.post("/register")
@@ -24,8 +26,8 @@ async def register_endpoint(
     *,
     db: Session = Depends(deps.get_db),
     user_in: RegisterData,
-    headers: AuthHeader = Depends()
-):
+    headers: deps.AuthHeader = Depends(deps.get_auth_header)
+):  
     # Remove 'Bearer ' from the Authorization header
     id_token = headers.Authorization[7:]
 
@@ -39,16 +41,17 @@ async def register_endpoint(
 
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
-    email = decoded_token["email"]
 
     userin = UserCreate(
         uid=uid,
-        email=email,
+        email=user_in.email,
         roles=user_in.roles,
-        phone_number=user_in.phone_number,
-        tags=[],
-        name="",
+        phone_number=user_in.phone,
+        tags=user_in.tags,
+        f_name=user_in.first_name,
+        l_name=user_in.last_name,
         verified=False if "PROVIDER" in user_in.roles else True,
+        image="",
     )
 
     # Create the user in the database
@@ -57,7 +60,7 @@ async def register_endpoint(
 
 @router.post("/login")
 async def get_user_by_token(
-    db: Session = Depends(deps.get_db), headers: AuthHeader = Depends()
+    db: Session = Depends(deps.get_db), headers: deps.AuthHeader = Depends(deps.get_auth_header)
 ):
     # Remove 'Bearer ' from the Authorization header
     id_token = headers.Authorization[7:]
@@ -72,7 +75,6 @@ async def get_user_by_token(
 
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
-
     # Get the user from the database
     user = crud.user.get(db, id=uid)
     if user is None:

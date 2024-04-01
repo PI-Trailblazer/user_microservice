@@ -16,7 +16,7 @@ class User(Base):
     )
     f_name: Mapped[str] = mapped_column(String(32), nullable=False)
     l_name: Mapped[str] = mapped_column(String(32), nullable=False)
-    phone_number: Mapped[Optional[int]] = mapped_column(Integer)
+    phone_number: Mapped[Optional[str]] = mapped_column(String(14))
     roles: Mapped[List[str]] = mapped_column(
         MutableList.as_mutable(ARRAY(Text)), default=[], nullable=False
     )
