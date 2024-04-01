@@ -10,7 +10,7 @@ class User(BaseModel):
     email: str
     f_name: str
     l_name: str
-    phone_number: Optional[int]
+    phone_number: Optional[str]
     roles: List[str]
     verified: bool
     tags: List[str]
@@ -24,7 +24,7 @@ class UserCreate(User):
 class UserUpdate(User):
     f_name: Optional[str]
     l_name: Optional[str]
-    phone_number: Optional[int]
+    phone_number: Optional[str]
     roles: Optional[List[str]]
     verified: Optional[bool]
     tags: Optional[List[str]]
