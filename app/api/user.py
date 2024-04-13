@@ -80,3 +80,13 @@ async def get_user_by_token(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.get("/{user_id}")
+async def get_user_by_id(
+    user_id: str,
+    db: Session = Depends(deps.get_db)
+    ):
+    user = crud.user.get(db, id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
