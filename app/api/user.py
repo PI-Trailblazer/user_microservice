@@ -19,15 +19,13 @@ class RegisterData(BaseModel):
     tags: List[str]
 
 
-
-
 @router.post("/register")
 async def register_endpoint(
     *,
     db: Session = Depends(deps.get_db),
     user_in: RegisterData,
     headers: deps.AuthHeader = Depends(deps.get_auth_header)
-):  
+):
     # Remove 'Bearer ' from the Authorization header
     id_token = headers.Authorization[7:]
 
@@ -60,7 +58,8 @@ async def register_endpoint(
 
 @router.post("/login")
 async def get_user_by_token(
-    db: Session = Depends(deps.get_db), headers: deps.AuthHeader = Depends(deps.get_auth_header)
+    db: Session = Depends(deps.get_db),
+    headers: deps.AuthHeader = Depends(deps.get_auth_header),
 ):
     # Remove 'Bearer ' from the Authorization header
     id_token = headers.Authorization[7:]
@@ -81,11 +80,9 @@ async def get_user_by_token(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
 @router.get("/{user_id}")
-async def get_user_by_id(
-    user_id: str,
-    db: Session = Depends(deps.get_db)
-    ):
+async def get_user_by_id(user_id: str, db: Session = Depends(deps.get_db)):
     user = crud.user.get(db, id=user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
