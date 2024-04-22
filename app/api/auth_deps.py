@@ -15,7 +15,7 @@ from app.models.user import User
 from app.models.device_login import DeviceLogin
 from app.schemas.user import ScopeEnum
 from app.core.config import settings
-
+from app import crud
 
 ACCESS_TOKEN_TYPE: str = "access"
 REFRESH_TOKEN_TYPE: str = "refresh"
@@ -209,6 +209,7 @@ def generate_response(
             "type": ACCESS_TOKEN_TYPE,
             "iat": iat,
             "exp": iat + settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            "image": user.image,
         }
     )
 
@@ -233,6 +234,68 @@ def generate_response(
         samesite="strict",
     )
     return response
+
+
+def _validate_refresh_token(db, token):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Refresh"},
+    )
+
+    if token is None:
+        raise credentials_exception
+
+    try:
+        payload = decode_token(token)
+        print(payload)
+        # Extract all needed fields inside a `try` in case a token
+        # has a bad payload.
+        user_id = payload["sub"]
+        session_id = int(payload["sid"])
+        issued_at = payload["iat"]
+        token_type = payload["type"]
+    except (JWTError, ValueError, KeyError):
+        raise credentials_exception
+    # Check that the token is a refresh token
+    if token_type != REFRESH_TOKEN_TYPE:
+        raise credentials_exception
+
+    # Get the token's session from the database
+    device_login = db.get(DeviceLogin, (user_id, session_id))
+    if device_login is None:
+        raise credentials_exception
+
+    # Safety check that the session hasn't expired, the token should already
+    # encode this.
+    if device_login.expires_at < datetime.now():
+        logger.warning(f"Token that should be expired was accepted")
+        # Remove the device login from the database since it's no longer used
+        db.delete(device_login)
+        db.commit()
+
+        raise credentials_exception
+
+    # Check that this token issue date isn't before the last token refresh, if
+    # this happens it might mean someone got the token and is trying to replay it
+    if int(device_login.refreshed_at.timestamp()) > issued_at:
+        logger.warning(f"A refresh token was resubmitted")
+        # Preemptively remove the device login in order to prevent the token
+        # from being used by a malicious third party.
+        db.delete(device_login)
+        db.commit()
+
+        raise credentials_exception
+
+    user = crud.user.get(db, user_id)
+    if user is None:
+        # The user no longer exists so the device login is no longer useful.
+        db.delete(device_login)
+        db.commit()
+
+        raise credentials_exception
+
+    return user, device_login
 
 
 class OperationSuccess(BaseModel):

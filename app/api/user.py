@@ -1,6 +1,6 @@
 from requests import Session
 from app.api import deps, auth_deps
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, HTTPException, Security, Cookie, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Optional
@@ -44,6 +44,7 @@ async def register_endpoint(
 
     # Decode the JWT token
     decoded_token = auth_deps.verify_firebasetoken(id_token)
+
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
 
@@ -119,3 +120,39 @@ async def get_users(
     users = crud.user.get_multi(db)
     print(auth_data)
     return users
+
+
+@router.post(
+    "/logout",
+    responses={401: {"description": "Invalid refresh token"}},
+    response_model=auth_deps.OperationSuccess,
+)
+async def logout(
+    response: Response,
+    db: Session = Depends(deps.get_db),
+    refresh: str | None = Cookie(default=None),
+):
+    # remove the refresh token cookie from the client
+    response.delete_cookie("refresh")
+
+    _, device_login = auth_deps._validate_refresh_token(db, refresh)
+
+    # invalidate the user's token and clear it from the server-side
+    db.delete(device_login)
+    db.commit()
+
+    return auth_deps.OperationSuccess(
+        status="success", message="You have been logged out."
+    )
+
+
+@router.post(
+    "/refresh",
+    responses={401: {"description": "Invalid refresh token"}},
+    response_model=auth_deps.Token,
+)
+async def refresh(
+    db: Session = Depends(deps.get_db), refresh: str | None = Cookie(default=None)
+):
+    user, device_login = auth_deps._validate_refresh_token(db, refresh)
+    return auth_deps.generate_response(db, user, device_login)

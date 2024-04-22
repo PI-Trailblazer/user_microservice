@@ -16,14 +16,3 @@ def get_db():
         raise
     finally:
         db.close()
-
-
-class AuthHeader(BaseModel):
-    Authorization: str = Field(..., alias="Authorization")
-
-
-def get_auth_header(request: Request):
-    authorization: str = request.headers.get("Authorization", None)
-    if not authorization:
-        raise HTTPException(status_code=400, detail="Authorization header is missing")
-    return AuthHeader(Authorization=authorization)
