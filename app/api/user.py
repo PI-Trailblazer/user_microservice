@@ -1,11 +1,14 @@
 from requests import Session
-from app.api import deps
-from fastapi import APIRouter, Depends, HTTPException
+from app.api import deps, auth_deps
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Optional
-import jwt
+from jose import JWTError, jwt
 from app import crud
 from app.schemas import UserCreate
+
+from app.schemas.user import ScopeEnum, UserInDB
 
 router = APIRouter()
 
@@ -19,58 +22,73 @@ class RegisterData(BaseModel):
     tags: List[str]
 
 
-@router.post("/register")
+bearer_scheme = auth_deps.FirebaseToken(auto_error=False)
+
+
+@router.post(
+    "/register",
+    response_model=auth_deps.Token,
+    responses={
+        401: {"description": "Invalid token"},
+        400: {"description": "User already exists"},
+    },
+)
 async def register_endpoint(
     *,
     db: Session = Depends(deps.get_db),
     user_in: RegisterData,
-    headers: deps.AuthHeader = Depends(deps.get_auth_header)
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
     # Remove 'Bearer ' from the Authorization header
-    id_token = headers.Authorization[7:]
+    id_token = credentials.credentials
 
     # Decode the JWT token
-    try:
-        decoded_token = jwt.decode(id_token, options={"verify_signature": False})
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Signature has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
+    decoded_token = auth_deps.verify_firebasetoken(id_token)
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
 
+    maybe_user = crud.user.get(db, id=uid)
+
+    if maybe_user is not None:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    roles = ["admin"]
+    print(roles)
     userin = UserCreate(
         uid=uid,
         email=user_in.email,
-        roles=user_in.roles,
+        roles=roles,
         phone_number=user_in.phone,
         tags=user_in.tags,
         f_name=user_in.first_name,
         l_name=user_in.last_name,
-        verified=False if "PROVIDER" in user_in.roles else True,
+        verified=False if "provider" in user_in.roles else True,
         image="",
     )
 
+    user = crud.user.create(db, obj_in=userin)
+
     # Create the user in the database
-    return crud.user.create(db, obj_in=userin)
+    return auth_deps.generate_response(db, user)
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    response_model=auth_deps.Token,
+    responses={
+        401: {"description": "Invalid token"},
+        400: {"description": "User already exists"},
+    },
+)
 async def get_user_by_token(
     db: Session = Depends(deps.get_db),
-    headers: deps.AuthHeader = Depends(deps.get_auth_header),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
     # Remove 'Bearer ' from the Authorization header
-    id_token = headers.Authorization[7:]
+    id_token = credentials.credentials
 
     # Decode the JWT token
-    try:
-        decoded_token = jwt.decode(id_token, options={"verify_signature": False})
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Signature has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    decoded_token = auth_deps.verify_firebasetoken(id_token)
 
     # Token is valid; now you can use the decoded_token
     uid = decoded_token["user_id"]
@@ -78,7 +96,8 @@ async def get_user_by_token(
     user = crud.user.get(db, id=uid)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+
+    return auth_deps.generate_response(db, user)
 
 
 @router.get("/{user_id}")
@@ -87,3 +106,16 @@ async def get_user_by_id(user_id: str, db: Session = Depends(deps.get_db)):
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.get("/", status_code=200, responses=auth_deps.auth_response)
+async def get_users(
+    *,
+    db: Session = Depends(deps.get_db),
+    auth_data: auth_deps.AuthData = Security(
+        auth_deps.verify_token, scopes=[ScopeEnum.ADMIN]
+    ),
+) -> List[UserInDB]:
+    users = crud.user.get_multi(db)
+    print(auth_data)
+    return users

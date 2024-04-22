@@ -1,15 +1,16 @@
+from urllib import request
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from fastapi.responses import JSONResponse, Response
 
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from pydantic import BaseModel, ValidationError
 from jose import JWTError, jwt
 from datetime import datetime, timezone
 from typing import Annotated, Any, Dict, List, Literal, Optional, Set, Union
 from loguru import logger
-
+from jwt.algorithms import RSAAlgorithm
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, SecurityScopes
+import requests
 from app.models.user import User
 from app.models.device_login import DeviceLogin
 from app.schemas.user import ScopeEnum
@@ -30,15 +31,18 @@ auth_response: Dict[Union[int, str], Dict[str, Any]] = {
     403: {"description": "Not Authorized"},
 }
 
-oauth2_scheme = OAuth2PasswordBearer(
-    auto_error=False,
-    tokenUrl=f"{settings.API_V1_STR}/login/",
-    scopes={
-        ScopeEnum.ADMIN: "Admin users",
-        ScopeEnum.PROVIDER: "Provider users",
-        ScopeEnum.USER: "Regular users",
-    },
-)
+
+class FirebaseToken(HTTPBearer):
+    def __init__(self, *, auto_error: bool = True):
+        super().__init__(auto_error=auto_error)
+
+
+class ProprietaryToken(HTTPBearer):
+    def __init__(self, *, auto_error: bool = True):
+        super().__init__(auto_error=auto_error)
+
+
+secure = ProprietaryToken(auto_error=False)
 
 
 class Token(BaseModel):
@@ -49,6 +53,48 @@ class Token(BaseModel):
 def create_token(payload: dict[str, Any]) -> str:
     encoded_jwt = jwt.encode(payload, private_key, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
+
+
+def verify_firebasetoken(token: str) -> dict[str, Any]:
+    try:
+        response = requests.get(
+            "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+        )
+        keys = response.json()
+        unverified_header = jwt.get_unverified_header(token)
+        key_id = unverified_header["kid"]
+
+        if key_id not in keys:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        decoded_token = jwt.get_unverified_claims(token)
+        exp = decoded_token["exp"]
+        iat = decoded_token["iat"]
+        aud = decoded_token["aud"]
+        iss = decoded_token["iss"]
+        sub = decoded_token["sub"]
+        auth_time = decoded_token["auth_time"]
+
+        localtime = datetime.now(timezone.utc)
+
+        if exp < localtime.timestamp():
+            raise HTTPException(status_code=401, detail="Token has expired")
+        if iat > localtime.timestamp():
+            raise HTTPException(status_code=401, detail="Token issued in the future")
+        if aud != settings.FIREBASE_PROJECT_ID:
+            raise HTTPException(status_code=401, detail="Invalid audience")
+        if iss != f"https://securetoken.google.com/{settings.FIREBASE_PROJECT_ID}":
+            raise HTTPException(status_code=401, detail="Invalid issuer")
+        if not sub:
+            raise HTTPException(status_code=401, detail="Anonymous user")
+        if auth_time > localtime.timestamp():
+            raise HTTPException(status_code=401, detail="Invalid authentication time")
+
+        return decoded_token
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Signature has expired")
+    except jwt.JWTClaimsError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 def decode_token(token: str) -> dict[str, Any]:
@@ -72,8 +118,9 @@ class AuthData(BaseModel):
 
 
 async def get_auth_data(
-    token: str = Depends(oauth2_scheme),
+    cred: str = Depends(secure),
 ) -> Optional[AuthData]:
+    token = cred.credentials
     if token is None:
         return None
 
@@ -141,27 +188,27 @@ def generate_response(
 
     if device_login is None:
         device_login = DeviceLogin(
-            user_id=user.id,
+            user_id=user.uid,
             session_id=int(iat.timestamp()),
             refreshed_at=iat,
-            expires_at=iat + settings.ACCESS_TOKEN_EXPIRE,
+            expires_at=iat + settings.ACCESS_TOKEN_EXPIRE_MINUTES,
         )
         db.add(device_login)
     else:
         device_login.refreshed_at = iat
-        device_login.expires_at = iat + settings.ACCESS_TOKEN_EXPIRE
+        device_login.expires_at = iat + settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
     db.commit()
 
     access_token = create_token(
         {
-            "sub": user.id,
+            "sub": user.uid,
             "name": f"{user.f_name} {user.l_name}",
             "scopes": user.roles,
             "tags": user.tags,
             "type": ACCESS_TOKEN_TYPE,
             "iat": iat,
-            "exp": iat + settings.ACCESS_TOKEN_EXPIRE,
+            "exp": iat + settings.ACCESS_TOKEN_EXPIRE_MINUTES,
         }
     )
 
@@ -169,7 +216,7 @@ def generate_response(
         {
             "iat": iat,
             "exp": device_login.expires_at,
-            "sub": user.id,
+            "sub": user.uid,
             "type": REFRESH_TOKEN_TYPE,
             "sid": device_login.session_id,
         }

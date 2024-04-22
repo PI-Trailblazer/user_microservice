@@ -8,7 +8,7 @@ from app.db.base_class import Base
 
 class DeviceLogin(Base):
     user_id: Mapped[str] = mapped_column(
-        ForeignKey(User.id, ondelete="CASCADE"), primary_key=True
+        ForeignKey(User.uid, ondelete="CASCADE"), primary_key=True
     )
     session_id: Mapped[int] = mapped_column(primary_key=True)
     refreshed_at: Mapped[datetime]

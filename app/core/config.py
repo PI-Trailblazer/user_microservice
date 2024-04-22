@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     PRODUCTION: bool = os.getenv("ENV") == "production"
 
-    API_V1_STR: str = "/api"
+    API_V1_STR: str = "/api/user"
     STATIC_STR: str = "/static"
 
     HOST: str = "www.google.pt" if PRODUCTION else "http://localhost"
@@ -65,11 +65,14 @@ class Settings(BaseSettings):
         return self
 
     # Auth
-    JWT_SECRET_KEY_PATH: str = "/dev-keys/jwt-key"
-    JWT_PUBLIC_KEY_PATH: str = "/dev-keys/jwt-key.pub"
+    JWT_SECRET_KEY_PATH: str = "./dev-keys/jwt-key"
+    JWT_PUBLIC_KEY_PATH: str = "./dev-keys/jwt-key.pub"
     ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(hours=1)
     REFRESH_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(days=7)
     JWT_ALGORITHM: str = "RS256"
+
+    # Firebase
+    FIREBASE_PROJECT_ID: str = "trailblazerauth"
 
 
 settings = Settings()

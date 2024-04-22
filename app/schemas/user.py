@@ -28,6 +28,7 @@ class User(BaseModel):
 
 class UserCreate(User):
     uid: str
+    roles: List[str] = []
 
 
 class UserUpdate(User):
