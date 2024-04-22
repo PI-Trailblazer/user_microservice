@@ -109,19 +109,6 @@ async def get_user_by_id(user_id: str, db: Session = Depends(deps.get_db)):
     return user
 
 
-@router.get("/", status_code=200, responses=auth_deps.auth_response)
-async def get_users(
-    *,
-    db: Session = Depends(deps.get_db),
-    auth_data: auth_deps.AuthData = Security(
-        auth_deps.verify_token, scopes=[ScopeEnum.ADMIN]
-    ),
-) -> List[UserInDB]:
-    users = crud.user.get_multi(db)
-    print(auth_data)
-    return users
-
-
 @router.post(
     "/logout",
     responses={401: {"description": "Invalid refresh token"}},
