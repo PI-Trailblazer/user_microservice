@@ -1,0 +1,21 @@
+services:
+  db_pg:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user_db_user
+      POSTGRES_PASSWORD: user_db_password
+      POSTGRES_DB: user_db
+    healthcheck:
+      test: pg_isready -U postgres
+      interval: 1m30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  pg_data:
+    driver: local
