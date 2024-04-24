@@ -1,9 +1,18 @@
+from enum import Enum
 from re import L
 from typing import Optional, List
 
 from pydantic import BaseModel
 
 from app.core.config import settings
+
+
+class ScopeEnum(str, Enum):
+    """Permissions scopes"""
+
+    USER = "user"
+    PROVIDER = "provider"
+    ADMIN = "admin"
 
 
 class User(BaseModel):
@@ -19,6 +28,7 @@ class User(BaseModel):
 
 class UserCreate(User):
     uid: str
+    roles: List[str] = []
 
 
 class UserUpdate(User):
