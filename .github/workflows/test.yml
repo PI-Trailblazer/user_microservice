@@ -25,7 +25,7 @@ jobs:
       - name: Setup docker
         run: docker compose -f compose.test.yml up -d
       - name: Run tox
-        run: tox -e coverage
+        run: poetry run tox -e coverage
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
