@@ -53,12 +53,10 @@ async def register_endpoint(
     if maybe_user is not None:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    roles = ["admin"]
-    print(roles)
     userin = UserCreate(
         uid=uid,
         email=user_in.email,
-        roles=roles,
+        roles=user_in.roles,
         phone_number=user_in.phone,
         tags=user_in.tags,
         f_name=user_in.first_name,

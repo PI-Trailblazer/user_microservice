@@ -1,0 +1,38 @@
+services:
+  db_pg:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user_db_user
+      POSTGRES_PASSWORD: user_db_password
+      POSTGRES_DB: user_db_test
+    healthcheck:
+      test: pg_isready -U user_db_user -d user_db_test
+      interval: 10s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  
+  usr_microservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: user_db_user
+      POSTGRES_PASSWORD: user_db_password
+      POSTGRES_DB: user_db_test
+      POSTGRES_SERVER: db_pg
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/user_microservice
+    depends_on:
+      db_pg:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+    driver: local
