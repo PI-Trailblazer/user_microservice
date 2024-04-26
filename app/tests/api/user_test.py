@@ -29,6 +29,6 @@ def setup_database(db: SessionTesting):
 
 
 def test_get_user_by_id(db: SessionTesting, client: TestClient):
-    response = client.get("/api/v1/user/test_user")
+    response = client.get("/api/user/test_user")
     assert response.status_code == 200
     assert response.json() == test_user

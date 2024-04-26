@@ -10,8 +10,10 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.engine import Connection
 from sqlalchemy.schema import CreateSchema
+from alembic import command, config
+from app.utils import ROOT_DIR
 
-from app.api.auth_deps import get_auth_data
+from app.api.auth_deps import get_auth_data, AuthData
 from app.api.deps import get_db
 from app.api import router as api_v1_router
 from core.config import settings
@@ -38,20 +40,16 @@ def connection():
 
     This only executes once for all tests.
     """
-    with engine.connect() as connection:
-        if not engine.dialect.has_schema(connection, schema=settings.SCHEMA_NAME):
-            event.listen(
-                Base.metadata,
-                "before_create",
-                CreateSchema(settings.SCHEMA_NAME),
-                insert=True,
-            )
+    last_known_revision = "e63d7af6ac9f"
+    with engine.connect() as conn:
+        cfg = config.Config(f"{ROOT_DIR}/alembic.ini")
+        cfg.attributes["connection"] = conn
+        cfg.attributes["configure_logger"] = False
+        command.upgrade(cfg, last_known_revision)
 
-        Base.metadata.reflect(bind=engine, schema=settings.SCHEMA_NAME)
-        Base.metadata.create_all(bind=engine, checkfirst=True)
-        connection.commit()
-        yield connection
-        Base.metadata.drop_all(engine)
+        conn.commit()
+        yield conn
+        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")

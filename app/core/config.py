@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     PRODUCTION: bool = os.getenv("ENV") == "production"
 
-    API_V1_STR: str = "/api/user"
+    API_V1_STR: str = "/api"
     STATIC_STR: str = "/static"
 
     HOST: str = "www.google.pt" if PRODUCTION else "http://localhost"

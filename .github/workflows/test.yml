@@ -19,9 +19,13 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install tox and any other packages
         run: pip install tox
+      - name: Setup docker
+        run: docker compose -f compose.test.yml up -d
       - name: Run tox
-        run: tox -e py
+        run: tox -e coverage
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Cleanup docker
+        run: docker compose -f compose.test.yml down
