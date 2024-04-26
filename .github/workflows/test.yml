@@ -33,5 +33,6 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_OPTS: -Dsonar.python.coverage.reportPaths=coverage.xml
       - name: Cleanup docker
         run: docker compose -f compose.test.yml down
