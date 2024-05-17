@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
-
+from fastapi.staticfiles import StaticFiles
 from app.db.init_db import init_db
 from fastapi import FastAPI
 from app.api import router as api_router
@@ -33,4 +33,5 @@ app.add_middleware(
 )
 
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(api_router, prefix=settings.API_V1_STR)

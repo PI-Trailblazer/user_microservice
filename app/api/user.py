@@ -1,6 +1,18 @@
 from requests import Session
 from app.api import deps, auth_deps
-from fastapi import APIRouter, Depends, HTTPException, Security, Cookie, Response
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Security,
+    Form,
+    Cookie,
+    Response,
+    File,
+    UploadFile,
+    Request,
+)
+from loguru import logger
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Optional
@@ -8,7 +20,8 @@ from jose import JWTError, jwt
 from app import crud
 from app.schemas import UserCreate
 
-from app.schemas.user import ScopeEnum, UserInDB
+from app.schemas.user import ScopeEnum, UserInDB, UserUpdate
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -62,7 +75,7 @@ async def register_endpoint(
         f_name=user_in.first_name,
         l_name=user_in.last_name,
         verified=False if "provider" in user_in.roles else True,
-        image="",
+        image=settings.DEFAULT_USER_IMAGE,
     )
 
     user = crud.user.create(db, obj_in=userin)
@@ -141,3 +154,24 @@ async def refresh(
 ):
     user, device_login = auth_deps._validate_refresh_token(db, refresh)
     return auth_deps.generate_response(db, user, device_login)
+
+
+@router.put("/me", status_code=200, response_model=UserInDB)
+async def update_curr_usr(
+    *,
+    request: Request,
+    user: UserUpdate = Form(),
+    image: UploadFile = File(None),
+    db: Session = Depends(deps.get_db),
+    payload: auth_deps.AuthData = Security(auth_deps.verify_token, scopes=[]),
+):
+    usr = crud.user.get(db, id=payload.sub)
+    user = crud.user.update(db, db_obj=usr, obj_in=user)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    form = await request.form()
+    if "image" in form:
+        user = await crud.user.update_image(db=db, db_obj=user, image=image)
+    return user

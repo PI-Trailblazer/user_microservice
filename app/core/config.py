@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(hours=1)
     REFRESH_TOKEN_EXPIRE_MINUTES: timedelta = timedelta(days=7)
     JWT_ALGORITHM: str = "RS256"
-
+    DEFAULT_USER_IMAGE: str = "/static/user/-1/default.jpg"
     # Firebase
     FIREBASE_PROJECT_ID: str = "trailblazerauth"
 

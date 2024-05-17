@@ -10,7 +10,7 @@ from app.db.base_class import Base
 
 
 class User(Base):
-    uid: Mapped[str] = mapped_column("id", String(128), primary_key=True)
+    uid: Mapped[str] = mapped_column("id", String(28), primary_key=True)
     email: Mapped[str] = mapped_column(
         "email", String(64), unique=True, index=True, nullable=False
     )
