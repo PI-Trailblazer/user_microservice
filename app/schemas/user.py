@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from app.core.config import settings
 
+from app.utils import ValidateFromJson
+
 
 class ScopeEnum(str, Enum):
     """Permissions scopes"""
@@ -23,23 +25,23 @@ class User(BaseModel):
     roles: List[str]
     verified: bool
     tags: List[str]
-    image: str
 
 
 class UserCreate(User):
     uid: str
     roles: List[str] = []
+    image: str
 
 
-class UserUpdate(User):
+class UserUpdate(User, ValidateFromJson):
     f_name: Optional[str]
     l_name: Optional[str]
     phone_number: Optional[str]
     roles: Optional[List[str]]
     verified: Optional[bool]
     tags: Optional[List[str]]
-    image: Optional[str]
 
 
 class UserInDB(User):
     uid: str
+    image: str

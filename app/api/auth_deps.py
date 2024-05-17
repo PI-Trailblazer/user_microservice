@@ -120,6 +120,8 @@ class AuthData(BaseModel):
 async def get_auth_data(
     cred: str = Depends(secure),
 ) -> Optional[AuthData]:
+    if cred is None:
+        return None
     token = cred.credentials
     if token is None:
         return None
