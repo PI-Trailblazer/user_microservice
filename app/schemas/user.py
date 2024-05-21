@@ -33,12 +33,11 @@ class UserCreate(User):
     image: str
 
 
-class UserUpdate(User, ValidateFromJson):
+class UserUpdate(BaseModel, ValidateFromJson):
+    email: Optional[str]
     f_name: Optional[str]
     l_name: Optional[str]
     phone_number: Optional[str]
-    roles: Optional[List[str]]
-    verified: Optional[bool]
     tags: Optional[List[str]]
 
 
