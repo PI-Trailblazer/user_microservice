@@ -72,7 +72,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
                         f"Failed to delete profile picture for user {db_obj.uid}: {e}"
                     )
 
-            setattr(db_obj, "image", img_path)
+            setattr(db_obj, "image", f"/static{img_path}")
             db.add(db_obj)
             db.commit()
             return db_obj
